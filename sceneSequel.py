@@ -2,6 +2,7 @@
 
 from random import Random
 import sys
+import pickle
 
 random=Random()
 
@@ -27,7 +28,7 @@ world["heal my chest wound"]={"go to the hospital":{"probability":1}, "get a mus
 world["steal them jewels"]={"steal them jewels":{"probability":1, "complications":{}}}
 
 endGoal="steal them jewels"
-
+startingPoint="go about it the obvious way"
 
 goalPool={endGoal:1}
 complicationList=[]
@@ -258,8 +259,50 @@ def composeComplicationList():
 			if "complications" in world[i][j]:
 				for k in world[i][j]["complications"]:
 					complicationList.append(k)
+
 def init():
 	composeComplicationList()
-init()
-scenes("go about it the obvious way")
 
+def printHelp():
+	print("Usage: scene-sequel.py [[paramname param] ...]\n")
+	print("Parameters:")
+	print("\tworld\t\t\tFilename for world file (pickle format)")
+	print("\tstartingPoint\t\tName of initial state. (default: 'go about it in the obvious way')")
+	print("\tendGoal\t\t\tName of initial goal state. This begins as the sole member of the goal pool, and when the current state is the endGoal we stop navigating the world. (default 'steal them jewels')")
+	print("\tMAX\t\t\tMaximum recursion depth during planning (default: 5)")
+	print("\tsuccessWeight\t\tBase likelihood for succeeding at a state transition.")
+	print("\tcomplicationWeight\tBase likelihood for accumulating complications in the goal pool when attempting a state transition.")
+	sys.exit(1)
+
+def handleArgv():
+	global startingPoint, endGoal, MAX, successWeight, complicationWeight, world
+	nextItem=None
+	for arg in sys.argv[1:]:
+		if(nextItem!=None):
+			if(nextItem=="startingPoint"):
+				startingPoint=arg
+			elif(nextItem=="endGoal"):
+				endGoal=arg
+			elif(nextItem=="MAX"):
+				MAX=int(arg)
+			elif(nextItem=="successWeight"):
+				successWeight=float(arg)
+			elif(nextItem=="complicationWeight"):
+				complicationWeight=float(arg)
+			elif(nextItem=="world"):
+				world=pickle.load(arg)
+			else:
+				printHelp()
+			nextItem=None
+		else:
+			nextItem=arg
+	if(nextItem!=None):
+		printHelp()
+
+def main():
+	global startingPoint
+	handleArgv()
+	init()
+	scenes(startingPoint)
+
+main()
